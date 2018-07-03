@@ -1,0 +1,181 @@
+---
+title: "Analysis of European Social Survey"
+author: "Tobias Dienlin"
+date: "2018-07-03"
+output: html_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE,
+                      fig.height = 5, cache = FALSE)
+```
+
+```{r}
+# load packages
+packages <- c("car", "devtools", "foreign", "haven", "knitr", "magrittr", 
+              "plyr", "tidyverse")
+invisible(lapply(packages, library, character.only = TRUE))
+devtools::install_github("dgrtwo/gganimate")
+library("gganimate")
+```
+
+```{r LoadData, cache=TRUE}
+# load data
+## you can download the ess data here: http://www.europeansocialsurvey.org/data/
+## choose SPSS format, unzip and save to current folder
+d_select <- paste0("../data/", c("ESS1e06_5.sav", "ESS2e03_5.sav", "ESS3e03_6.sav", 
+                              "ESS4e04_4.sav", "ESS5e03_3.sav", "ESS6e02_3.sav", 
+                              "ESS7e02_1.sav", "ESS8e01.sav"))
+d_names <- c(paste0("t", seq(1, 8)))
+d <- lapply(d_select, read_sav) %>% 
+  set_names(d_names)
+```
+
+```{r DataWrangling}
+# create new variables
+## empty variables that weren't measured at particular wave
+d$t6$netuse <- NA
+d$t7$netuse <- NA
+d$t8$netuse <- NA  # was actually collected, but with different response options -- no comparison possible
+
+## rename variable "inmdisc"
+## note: additional response categories were introduced, need to reduce and recode
+d$t6$inmdisc <- d$t6$inprdsc %>% as.numeric %>% car::recode("0=2; 1:6=1")
+d$t7$inmdisc <- d$t7$inprdsc %>% as.numeric %>% car::recode("0=2; 1:6=1")
+d$t8$inmdisc <- d$t8$inprdsc %>% as.numeric %>% car::recode("0=2; 1:6=1")
+
+# create objects with names, selections
+vars_measured <- c("netuse", "happy", "sclmeet", "inmdisc", "health", "hlthhmp")
+vars_measured_labels <- c("Internet Use", "Happiness", "Social Meet-Ups", 
+                          "Intimate Discussion Partners", "Health", 
+                          "Health Problems")
+vars_measured_labels_breaks <- c("Internet\nUse", "Happiness", "Social\nMeet-Ups", 
+                          "Intimate\nDiscussion\nPartners", "Health", 
+                          "Health\nProblems")
+vars_limits <- data.frame(ll = c(rep(0, 6)),
+                          ul = c(7, 10, 6, 1, 4, 2))
+vars_fixed <- c("name", "essround", "idno", "cntry", "dweight", "pweight")
+vars_selected <- c(vars_measured, vars_fixed)
+vars <- cbind(name = vars_measured, label = vars_measured_labels, vars_limits)
+
+# select variables for analyses
+d_vars <- lapply(d, select, vars_selected) %>% 
+  lapply(., setNames, vars_selected) %>% 
+  lapply(., mutate, id = paste(essround, idno, sep = "_")) %>% 
+  lapply(., mutate, 
+         netuse = as.numeric(netuse), 
+         happy = as.numeric(happy),
+         sclmeet = as.numeric(sclmeet),
+         inmdisc = as.numeric(inmdisc),
+         health = as.numeric(health),
+         hlthhmp = as.numeric(hlthhmp),
+         dweight = as.numeric(dweight),
+         pweight = as.numeric(pweight)
+         )
+
+# recode variables, recode missings
+# set lower end to "0" (more logical)
+d_vars <- lapply(d_vars, mutate,
+       sclmeet = car::recode(sclmeet, recodes = "1=0; 2=1; 3=2; 4=3; 5=4; 6=5; 7=6"),
+       inmdisc = car::recode(inmdisc, recodes = "2=0; 1=1"),
+       health = car::recode(health, recodes = "1=4; 2=3; 3=2; 4=1; 5=0"),
+       hlthhmp = car::recode(hlthhmp, recodes = "1=2; 2=1; 3=0")
+       )
+```
+
+```{r analyses}
+# means
+means <- lapply(d_vars, function(x) (
+  summarise_at(x, vars(vars_measured), 
+             funs(weighted.mean(., w = dweight * pweight, na.rm = TRUE),
+                  mean(., na.rm = TRUE))))) %>% 
+  lapply(., as.data.frame) %>% 
+  bind_rows() %>% 
+  cbind(year = seq(2002, 2016, 2), .) %>% 
+  gather(., -year, key = "variable", value = "value") %>% 
+  separate(., variable, into = c("variable", "type"), sep = "_")
+
+# correlations
+correlations <- lapply(d_vars, select, vars_measured) %>% 
+  lapply(., cor, use = "pairwise.complete.obs") %>% 
+  lapply(., round, digits = 2)
+
+correlations_average <- lapply(d_vars, select, vars_measured) %>% 
+  bind_rows() %>% 
+  cor(use = "pairwise.complete.obs") %>% 
+  round(digits = 2) %>% 
+  set_colnames(vars_measured) %>% 
+  set_rownames(vars_measured_labels)
+```
+
+```{r visualization}
+# graphs
+make_p <- function(var){
+  # make plot using variable name, lower scale limit and upper scale limit
+  
+  p <- ggplot(filter(means, variable == var, type == "weighted.mean"),
+                   aes(year, value)) +
+  theme_bw() +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = round(value, 2)), vjust = 2, color = "white",
+            fontface = "bold") +
+  geom_smooth(se = FALSE, method = 'loess', size = 1.5) +
+  ylim(vars[vars$name == var, ]$ll, vars[vars$name == var, ]$ul) +
+  scale_x_continuous("year",
+                     breaks = seq(2002, 2016, 2),
+                     labels = seq(2002, 2016, 2)) +
+  ggtitle(vars[vars$name == var, ]$label)
+  print(p)
+}
+
+# tables
+make_t = function(data) {
+  means_table <- filter(data, type == "weighted.mean") %>% 
+    spread(year, value) %>% 
+    select(-type)
+#  means_table <- format(means_table, digits = 2, justify = "left")
+  means_table <- kable(means_table, digits = 2)
+  return(means_table)
+}
+```
+
+# Means
+## Internet Use
+
+```{r}
+p_netuse <- make_p("netuse")
+```
+
+## Happiness
+
+```{r}
+p_happy <- make_p("happy")
+```
+
+## Social Meet-Ups
+
+```{r}
+p_sclmeet <- make_p("sclmeet")
+```
+
+# Intimate Discussion partners
+```{r}
+p_inmdisc <- make_p("inmdisc")
+```
+
+## Health
+
+```{r}
+p_health <- make_p("health")
+```
+
+## Health Problems
+
+```{r}
+p_hlthhmp <- make_p("hlthhmp")
+```
+
+# Correlations
+```{r}
+kable(correlations_average)
+```
