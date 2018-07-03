@@ -12,11 +12,9 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE,
 
 ```{r}
 # load packages
-packages <- c("car", "devtools", "foreign", "haven", "knitr", "magrittr", 
-              "plyr", "tidyverse")
+packages <- c("animation", "car", "foreign", "haven", "knitr", 
+              "magrittr", "plyr", "tidyverse")
 invisible(lapply(packages, library, character.only = TRUE))
-devtools::install_github("dgrtwo/gganimate")
-library("gganimate")
 ```
 
 ```{r LoadData, cache=TRUE}
@@ -54,7 +52,8 @@ vars_measured_labels_breaks <- c("Internet\nUse", "Happiness", "Social\nMeet-Ups
                           "Health\nProblems")
 vars_limits <- data.frame(ll = c(rep(0, 6)),
                           ul = c(7, 10, 6, 1, 4, 2))
-vars_fixed <- c("name", "essround", "idno", "cntry", "dweight", "pweight")
+vars_fixed <- c("name", "essround", "idno", "gndr", "agea", 
+                "cntry", "dweight", "pweight")
 vars_selected <- c(vars_measured, vars_fixed)
 vars <- cbind(name = vars_measured, label = vars_measured_labels, vars_limits)
 
@@ -95,6 +94,17 @@ means <- lapply(d_vars, function(x) (
   gather(., -year, key = "variable", value = "value") %>% 
   separate(., variable, into = c("variable", "type"), sep = "_")
 
+means_adolescents <- lapply(d_vars, filter, agea < 26) %>%  
+  lapply(., function(x) (
+  summarise_at(x, vars(vars_measured), 
+             funs(weighted.mean(., w = dweight * pweight, na.rm = TRUE),
+                  mean(., na.rm = TRUE))))) %>% 
+  lapply(., as.data.frame) %>% 
+  bind_rows() %>% 
+  cbind(year = seq(2002, 2016, 2), .) %>% 
+  gather(., -year, key = "variable", value = "value") %>% 
+  separate(., variable, into = c("variable", "type"), sep = "_")
+
 # correlations
 correlations <- lapply(d_vars, select, vars_measured) %>% 
   lapply(., cor, use = "pairwise.complete.obs") %>% 
@@ -110,10 +120,17 @@ correlations_average <- lapply(d_vars, select, vars_measured) %>%
 
 ```{r visualization}
 # graphs
-make_p <- function(var){
+make_p <- function(var, adolescent = FALSE, save = FALSE){
   # make plot using variable name, lower scale limit and upper scale limit
   
-  p <- ggplot(filter(means, variable == var, type == "weighted.mean"),
+  if(isTRUE(adolescent)) {
+    data = means_adolescents
+    title = paste0(vars[vars$name == var, ]$label, " (Adolescents)")
+  } else {
+    data = means
+    title = vars[vars$name == var, ]$label
+  }
+  p <- ggplot(filter(data, variable == var, type == "weighted.mean"),
                    aes(year, value)) +
   theme_bw() +
   geom_bar(stat = "identity") +
@@ -124,7 +141,14 @@ make_p <- function(var){
   scale_x_continuous("year",
                      breaks = seq(2002, 2016, 2),
                      labels = seq(2002, 2016, 2)) +
-  ggtitle(vars[vars$name == var, ]$label)
+  ggtitle(title)
+  
+  if(isTRUE(save) & !isTRUE(adolescent)) {
+    ggsave(paste0("../figures/", var, "_all.png"))
+  } else if(isTRUE(save) & isTRUE(adolescent)) {
+    ggsave(paste0("../figures/", var, "_adolescents.png"))
+  }
+  
   print(p)
 }
 
@@ -143,39 +167,58 @@ make_t = function(data) {
 ## Internet Use
 
 ```{r}
-p_netuse <- make_p("netuse")
+make_p("netuse", save = TRUE)
+make_p("netuse", adolescent = TRUE, save = TRUE)
 ```
 
 ## Happiness
 
 ```{r}
-p_happy <- make_p("happy")
+make_p("happy", save = TRUE)
+make_p("happy", adolescent = TRUE, save = TRUE)
 ```
 
 ## Social Meet-Ups
 
 ```{r}
-p_sclmeet <- make_p("sclmeet")
+make_p("sclmeet", save = TRUE)
+make_p("sclmeet", adolescent = TRUE, save = TRUE)
 ```
 
 # Intimate Discussion partners
 ```{r}
-p_inmdisc <- make_p("inmdisc")
+make_p("inmdisc", save = TRUE)
+make_p("inmdisc", adolescent = TRUE, save = TRUE)
 ```
 
 ## Health
 
 ```{r}
-p_health <- make_p("health")
+make_p("health", save = TRUE)
+make_p("health", adolescent = TRUE, save = TRUE)
 ```
 
 ## Health Problems
 
 ```{r}
-p_hlthhmp <- make_p("hlthhmp")
+make_p("hlthhmp", save = TRUE)
+make_p("hlthhmp", adolescent = TRUE, save = TRUE)
 ```
+
+## Overview
+
+```{r SaveGif}
+system2("magick", c("convert", "-delay 150", "../figures/*_all.png", "../figures/ess_means_all.gif"))
+system2("magick", c("convert", "-delay 150", "../figures/*_adolescents.png", "../figures/ess_means_adolescents.gif"))
+```
+
+![Overview of means all Europeans](../figures/ess_means_all.gif)
+
+![Overview of means for adolescents](../figures/ess_means_adolescents.gif)
+
 
 # Correlations
 ```{r}
 kable(correlations_average)
 ```
+
