@@ -51,7 +51,7 @@ vars_measured_labels_breaks <- c("Internet\nUse", "Happiness", "Social\nMeet-Ups
                           "Intimate\nDiscussion\nPartners", "Health", 
                           "Health\nProblems")
 vars_limits <- data.frame(ll = c(rep(0, 6)),
-                          ul = c(7, 10, 6, 1, 4, 2))
+                          ul = c(7, 10, 7, 1, 4, 2))
 vars_fixed <- c("name", "essround", "idno", "gndr", "agea", 
                 "cntry", "dweight", "pweight")
 vars_selected <- c(vars_measured, vars_fixed)
@@ -75,6 +75,7 @@ d_vars <- lapply(d, select, vars_selected) %>%
 # recode variables, recode missings
 # set lower end to "0" (more logical)
 d_vars <- lapply(d_vars, mutate,
+       netuse = car::recode(netuse, recodes ="0=0; 1=0; 2=1; 3=2; 4=3; 5=4; 6=5; 7=6"),
        sclmeet = car::recode(sclmeet, recodes = "1=0; 2=1; 3=2; 4=3; 5=4; 6=5; 7=6"),
        inmdisc = car::recode(inmdisc, recodes = "2=0; 1=1"),
        health = car::recode(health, recodes = "1=4; 2=3; 3=2; 4=1; 5=0"),
