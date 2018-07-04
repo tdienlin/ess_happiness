@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE,
 
 ```{r}
 # load packages
-packages <- c("animation", "car", "foreign", "haven", "knitr", 
+packages <- c("animation", "car", "cowplot", "foreign", "haven", "knitr", 
               "magrittr", "plyr", "tidyverse")
 invisible(lapply(packages, library, character.only = TRUE))
 ```
@@ -120,7 +120,7 @@ correlations_average <- lapply(d_vars, select, vars_measured) %>%
 
 ```{r visualization}
 # graphs
-make_p <- function(var, adolescent = FALSE, save = FALSE){
+make_p <- function(var, adolescent = FALSE, save = TRUE, print = TRUE){
   # make plot using variable name, lower scale limit and upper scale limit
   
   if(isTRUE(adolescent)) {
@@ -149,7 +149,11 @@ make_p <- function(var, adolescent = FALSE, save = FALSE){
     ggsave(paste0("../figures/", var, "_adolescents.png"))
   }
   
-  print(p)
+  if(isTRUE(print)){
+   print(p) 
+  } else {
+    return(p)
+  }
 }
 
 # tables
@@ -168,54 +172,62 @@ make_t = function(data) {
 
 ```{r}
 make_p("netuse", save = TRUE)
-make_p("netuse", adolescent = TRUE, save = TRUE)
+p_netuse_adolescents <- make_p("netuse", adolescent = TRUE)
 ```
 
 ## Happiness
 
 ```{r}
-make_p("happy", save = TRUE)
-make_p("happy", adolescent = TRUE, save = TRUE)
+p_happy <- make_p("happy", save = TRUE)
+p_happy_adolescents <- make_p("happy", adolescent = TRUE)
 ```
 
 ## Social Meet-Ups
 
 ```{r}
-make_p("sclmeet", save = TRUE)
-make_p("sclmeet", adolescent = TRUE, save = TRUE)
+p_sclmeet <- make_p("sclmeet", save = TRUE)
+p_sclmeet_adolescents <- make_p("sclmeet", adolescent = TRUE)
 ```
 
 # Intimate Discussion partners
 ```{r}
-make_p("inmdisc", save = TRUE)
-make_p("inmdisc", adolescent = TRUE, save = TRUE)
+p_inmdisc <- make_p("inmdisc", save = TRUE)
+p_inmdisc_adolescents <- make_p("inmdisc", adolescent = TRUE)
 ```
 
 ## Health
 
 ```{r}
-make_p("health", save = TRUE)
-make_p("health", adolescent = TRUE, save = TRUE)
+p_health <- make_p("health", save = TRUE)
+p_health_adolescents <- make_p("health", adolescent = TRUE)
 ```
 
 ## Health Problems
 
 ```{r}
-make_p("hlthhmp", save = TRUE)
-make_p("hlthhmp", adolescent = TRUE, save = TRUE)
+p_hlthhmp <- make_p("hlthhmp", save = TRUE)
+p_hlthhmp_adolescents <- make_p("hlthhmp", adolescent = TRUE)
 ```
 
 ## Overview
 
 ```{r SaveGif}
-system2("magick", c("convert", "-delay 150", "../figures/*_all.png", "../figures/ess_means_all.gif"))
-system2("magick", c("convert", "-delay 150", "../figures/*_adolescents.png", "../figures/ess_means_adolescents.gif"))
+system2("magick", 
+        c("convert", "-delay 150", "../figures/*_all.png", 
+          "../figures/ess_means_all.gif"))
+system2("magick", 
+        c("convert", "-delay 150", "../figures/*_adolescents.png", 
+          "../figures/ess_means_adolescents.gif"))
+system2("magick", 
+        c("convert", "-delay 150", "../figures/*.png", 
+          "../figures/ess_means_all_adolescents.gif"))
 ```
 
 ![Overview of means all Europeans](../figures/ess_means_all.gif)
 
 ![Overview of means for adolescents](../figures/ess_means_adolescents.gif)
 
+![Overview of means for all and adolescents](../figures/ess_means_all_adolescents.gif)
 
 # Correlations
 ```{r}
