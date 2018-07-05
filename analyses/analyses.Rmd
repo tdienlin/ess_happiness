@@ -51,7 +51,7 @@ vars_measured_labels_breaks <- c("Internet\nUse", "Happiness", "Social\nMeet-Ups
                           "Intimate\nDiscussion\nPartners", "Health", 
                           "Health\nProblems")
 vars_limits <- data.frame(ll = c(rep(0, 6)),
-                          ul = c(7, 10, 7, 1, 4, 2))
+                          ul = c(6, 10, 6, 1, 4, 2))
 vars_fixed <- c("name", "essround", "idno", "gndr", "agea", 
                 "cntry", "dweight", "pweight")
 vars_selected <- c(vars_measured, vars_fixed)
