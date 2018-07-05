@@ -1,7 +1,7 @@
 ---
 title: "Analysis of European Social Survey"
 author: "Tobias Dienlin"
-date: "2018-07-03"
+date: "2018-07-05"
 output: html_document
 ---
 
@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE,
 
 ```{r}
 # load packages
-packages <- c("animation", "car", "cowplot", "foreign", "haven", "knitr", 
+packages <- c("car", "foreign", "haven", "knitr", 
               "magrittr", "plyr", "tidyverse")
 invisible(lapply(packages, library, character.only = TRUE))
 ```
@@ -42,7 +42,7 @@ d$t6$inmdisc <- d$t6$inprdsc %>% as.numeric %>% car::recode("0=2; 1:6=1")
 d$t7$inmdisc <- d$t7$inprdsc %>% as.numeric %>% car::recode("0=2; 1:6=1")
 d$t8$inmdisc <- d$t8$inprdsc %>% as.numeric %>% car::recode("0=2; 1:6=1")
 
-# create objects with names, selections
+# create objects with names, selections, scale limits, etc.
 vars_measured <- c("netuse", "happy", "sclmeet", "inmdisc", "health", "hlthhmp")
 vars_measured_labels <- c("Internet Use", "Happiness", "Social Meet-Ups", 
                           "Intimate Discussion Partners", "Health", 
@@ -107,7 +107,7 @@ means_adolescents <- lapply(d_vars, filter, agea < 26) %>%
   separate(., variable, into = c("variable", "type"), sep = "_")
 
 # correlations
-correlations <- lapply(d_vars, select, vars_measured) %>% 
+correlations_each_wave <- lapply(d_vars, select, vars_measured) %>% 
   lapply(., cor, use = "pairwise.complete.obs") %>% 
   lapply(., round, digits = 2)
 
@@ -122,7 +122,8 @@ correlations_average <- lapply(d_vars, select, vars_measured) %>%
 ```{r visualization}
 # graphs
 make_p <- function(var, adolescent = FALSE, save = TRUE, print = TRUE){
-  # make plot using variable name, lower scale limit and upper scale limit
+  # make plot using variable name, option whether to include only adolescents,
+  # option to save plot (as png), and option to display result when compiling
   
   if(isTRUE(adolescent)) {
     data = means_adolescents
@@ -131,6 +132,7 @@ make_p <- function(var, adolescent = FALSE, save = TRUE, print = TRUE){
     data = means
     title = vars[vars$name == var, ]$label
   }
+  
   p <- ggplot(filter(data, variable == var, type == "weighted.mean"),
                    aes(year, value)) +
   theme_bw() +
@@ -156,58 +158,48 @@ make_p <- function(var, adolescent = FALSE, save = TRUE, print = TRUE){
     return(p)
   }
 }
-
-# tables
-make_t = function(data) {
-  means_table <- filter(data, type == "weighted.mean") %>% 
-    spread(year, value) %>% 
-    select(-type)
-#  means_table <- format(means_table, digits = 2, justify = "left")
-  means_table <- kable(means_table, digits = 2)
-  return(means_table)
-}
 ```
 
 # Means
 ## Internet Use
 
 ```{r}
-make_p("netuse", save = TRUE)
-p_netuse_adolescents <- make_p("netuse", adolescent = TRUE)
+make_p("netuse")
+make_p("netuse", adolescent = TRUE)
 ```
 
 ## Happiness
 
 ```{r}
-p_happy <- make_p("happy", save = TRUE)
-p_happy_adolescents <- make_p("happy", adolescent = TRUE)
+make_p("happy")
+make_p("happy", adolescent = TRUE)
 ```
 
 ## Social Meet-Ups
 
 ```{r}
-p_sclmeet <- make_p("sclmeet", save = TRUE)
-p_sclmeet_adolescents <- make_p("sclmeet", adolescent = TRUE)
+make_p("sclmeet")
+make_p("sclmeet", adolescent = TRUE)
 ```
 
 # Intimate Discussion partners
 ```{r}
-p_inmdisc <- make_p("inmdisc", save = TRUE)
-p_inmdisc_adolescents <- make_p("inmdisc", adolescent = TRUE)
+make_p("inmdisc")
+make_p("inmdisc", adolescent = TRUE)
 ```
 
 ## Health
 
 ```{r}
-p_health <- make_p("health", save = TRUE)
-p_health_adolescents <- make_p("health", adolescent = TRUE)
+make_p("health")
+make_p("health", adolescent = TRUE)
 ```
 
 ## Health Problems
 
 ```{r}
-p_hlthhmp <- make_p("hlthhmp", save = TRUE)
-p_hlthhmp_adolescents <- make_p("hlthhmp", adolescent = TRUE)
+make_p("hlthhmp")
+make_p("hlthhmp", adolescent = TRUE)
 ```
 
 ## Overview
