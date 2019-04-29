@@ -6,13 +6,15 @@ output: html_document
 ---
 
 ```{r global_options, include=FALSE}
+library(knitr)
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE,
                       fig.height = 5, cache = FALSE)
+opts_knit$set(root.dir = "../")
 ```
 
 ```{r}
 # load packages
-packages <- c("car", "foreign", "haven", "knitr", 
+packages <- c("car", "foreign", "haven", "knitr", "lme4",
               "magrittr", "plyr", "tidyverse")
 invisible(lapply(packages, library, character.only = TRUE))
 ```
@@ -182,7 +184,8 @@ make_p("sclmeet")
 make_p("sclmeet", adolescent = TRUE)
 ```
 
-# Intimate Discussion partners
+## Intimate Discussion partners
+
 ```{r}
 make_p("inmdisc")
 make_p("inmdisc", adolescent = TRUE)
@@ -223,7 +226,231 @@ system2("magick",
 ![Overview of means for all and adolescents](../figures/ess_means_all_adolescents.gif)
 
 # Correlations
+
 ```{r}
 kable(correlations_average)
 ```
 
+# Multilevel Approach
+
+```{r}
+# make long data-set
+d_long <- ldply(d_vars) %>% 
+  mutate(year = dplyr::recode(essround, `1` = "2002", `2` = "2004", `3` = "2006", `4` = "2008", `5` = "2010", `6` = "2012", `7` = "2014", `8` = "2016"))
+
+# make graph
+make_p_long <- function(data, variable, title, save = TRUE, adolescent = FALSE){
+  p <- ggplot(data, aes(year, value)) +
+  theme_bw() +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = round(value, 2)), vjust = 2, color = "white",
+            fontface = "bold") +
+  geom_smooth(se = FALSE, method = 'loess', size = 1.5) +
+  ylim(vars[vars$name == var, ]$ll, vars[vars$name == var, ]$ul) +
+  ggtitle(title)
+  
+  if(isTRUE(save) & !isTRUE(adolescent)) {
+    ggsave(paste0("../figures/multilevel/", var, "_all.png"), width = 8, height = 4)
+  } else if(isTRUE(save) & isTRUE(adolescent)) {
+    ggsave(paste0("../figures/multilevel/", var, "_adolescents.png"), width = 8, height = 4)
+  }
+  
+  return(p)
+}
+```
+
+## Internet Use
+
+```{r}
+var <- "netuse"
+tit <- "Internet Use"
+
+# all
+model <- assign(paste0("model_", var), 
+       lmer(netuse ~ 1 + (1 | cntry) + (1 | year), d_long))
+
+make_p_long(coefficients(model)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            tit)
+
+# adolescents
+model_ado <- assign(paste0("model_", var), 
+       lmer(netuse ~ 1 + (1 | cntry) + (1 | year), 
+            filter(d_long, agea < 25)))
+
+make_p_long(coefficients(model_ado)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            title = paste0(tit, " (Adolescents)"),
+            adolescent = TRUE)
+```
+
+## Happiness
+
+```{r}
+var <- "happy"
+tit <- "Happiness"
+
+# all
+model <- assign(paste0("model_", var), 
+       lmer(happy ~ 1 + (1 | cntry) + (1 | year), d_long))
+
+make_p_long(coefficients(model)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            tit)
+
+# adolescents
+model_ado <- assign(paste0("model_", var), 
+       lmer(happy ~ 1 + (1 | cntry) + (1 | year), 
+            filter(d_long, agea < 25)))
+
+make_p_long(coefficients(model_ado)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            title = paste0(tit, " (Adolescents)"),
+            adolescent = TRUE)
+```
+
+## Social Meet-Ups
+
+```{r}
+var <- "sclmeet"
+tit <- "Social Meet-Ups"
+
+# all
+model <- assign(paste0("model_", var), 
+       lmer(sclmeet ~ 1 + (1 | cntry) + (1 | year), d_long))
+
+make_p_long(coefficients(model)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            tit)
+
+# adolescents
+model_ado <- assign(paste0("model_", var), 
+       lmer(sclmeet ~ 1 + (1 | cntry) + (1 | year), 
+            filter(d_long, agea < 25)))
+
+make_p_long(coefficients(model_ado)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            title = paste0(tit, " (Adolescents)"),
+            adolescent = TRUE)
+```
+
+## Intimate Discussion Partners
+
+```{r}
+var <- "inmdisc"
+tit <- "Intimate Discussion Partners"
+
+# all
+model <- assign(paste0("model_", var), 
+       lmer(inmdisc ~ 1 + (1 | cntry) + (1 | year), d_long))
+
+make_p_long(coefficients(model)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            tit)
+
+# adolescents
+model_ado <- assign(paste0("model_", var), 
+       lmer(inmdisc ~ 1 + (1 | cntry) + (1 | year), 
+            filter(d_long, agea < 25)))
+
+make_p_long(coefficients(model_ado)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            title = paste0(tit, " (Adolescents)"),
+            adolescent = TRUE)
+```
+
+
+## Health
+
+```{r}
+var <- "health"
+tit <- "Health"
+
+# all
+model <- assign(paste0("model_", var), 
+       lmer(health ~ 1 + (1 | cntry) + (1 | year), d_long))
+
+make_p_long(coefficients(model)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            tit)
+
+# adolescents
+model_ado <- assign(paste0("model_", var), 
+       lmer(health ~ 1 + (1 | cntry) + (1 | year), 
+            filter(d_long, agea < 25)))
+
+make_p_long(coefficients(model_ado)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            title = paste0(tit, " (Adolescents)"),,
+            adolescent = TRUE)
+```
+
+
+## Health Problems
+
+```{r}
+var <- "hlthhmp"
+tit <- "Health Problems"
+
+# all
+model <- assign(paste0("model_", var), 
+       lmer(hlthhmp ~ 1 + (1 | cntry) + (1 | year), d_long))
+
+make_p_long(coefficients(model)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            tit)
+
+# adolescents
+model_ado <- assign(paste0("model_", var), 
+       lmer(hlthhmp ~ 1 + (1 | cntry) + (1 | year), 
+            filter(d_long, agea < 25)))
+
+make_p_long(coefficients(model_ado)$year %>% 
+              tibble::rownames_to_column("year") %>% 
+              rename(value = "(Intercept)"),
+            var,
+            title = paste0(tit, " (Adolescents)"),
+            adolescent = TRUE)
+```
+
+## Overview
+
+```{r SaveGif}
+system2("magick", 
+        c("convert", "-delay 200", "../figures/multilevel/*_all.png", 
+          "../figures/multilevel/ess_means_all.gif"))
+system2("magick", 
+        c("convert", "-delay 200", "../figures/multilevel/*_adolescents.png", 
+          "../figures/multilevel/ess_means_adolescents.gif"))
+system2("magick", 
+        c("convert", "-delay 200", "../figures/multilevel/*.png", 
+          "../figures/multilevel/ess_means_all_adolescents.gif"))
+```
+
+![Overview of means all Europeans](../figures/ess_means_all.gif)
+
+![Overview of means for adolescents](../figures/ess_means_adolescents.gif)
+
+![Overview of means for all and adolescents](../figures/ess_means_all_adolescents.gif)
