@@ -149,9 +149,9 @@ make_p <- function(var, adolescent = FALSE, save = TRUE, print = TRUE){
   ggtitle(title)
   
   if(isTRUE(save) & !isTRUE(adolescent)) {
-    ggsave(paste0("../figures/", var, "_all.png"))
+    ggsave(paste0("../figures/", var, "_all.png"), width = 8, height = 4)
   } else if(isTRUE(save) & isTRUE(adolescent)) {
-    ggsave(paste0("../figures/", var, "_adolescents.png"))
+    ggsave(paste0("../figures/", var, "_adolescents.png"), width = 8, height = 4)
   }
   
   if(isTRUE(print)){
@@ -437,7 +437,7 @@ make_p_long(coefficients(model_ado)$year %>%
 
 ## Overview
 
-```{r SaveGif}
+```{r SaveGif_2}
 system2("magick", 
         c("convert", "-delay 200", "../figures/multilevel/*_all.png", 
           "../figures/multilevel/ess_means_all.gif"))
