@@ -209,13 +209,13 @@ make_p("hlthhmp", adolescent = TRUE)
 
 ```{r SaveGif}
 system2("magick", 
-        c("convert", "-delay 150", "../figures/*_all.png", 
+        c("convert", "-delay 200", "../figures/*_all.png", 
           "../figures/ess_means_all.gif"))
 system2("magick", 
-        c("convert", "-delay 150", "../figures/*_adolescents.png", 
+        c("convert", "-delay 200", "../figures/*_adolescents.png", 
           "../figures/ess_means_adolescents.gif"))
 system2("magick", 
-        c("convert", "-delay 150", "../figures/*.png", 
+        c("convert", "-delay 200", "../figures/*.png", 
           "../figures/ess_means_all_adolescents.gif"))
 ```
 
