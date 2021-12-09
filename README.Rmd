@@ -135,6 +135,8 @@ make_fig <- function(model, variable, title, save = TRUE, adolescent = FALSE){
 }
 ```
 
+Number of participants: `r nrow(d_long)`. Number of participants aged 15-24: `r filter(d_long, agea < 25) %>% nrow()`.
+
 ## Internet Use
 
 Define variables.

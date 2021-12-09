@@ -125,14 +125,17 @@ make_fig <- function(model, variable, title, save = TRUE, adolescent = FALSE){
   {if(adolescent) ggtitle(paste0(title, " (Age < 25)")) else(ggtitle(title))}
   
   if(isTRUE(save) & !isTRUE(adolescent)) {
-    ggsave(paste0("figures/", var, "_all.png"), width = 8, height = 4)
+    ggsave(paste0("figures/", var, "_all.png"), width = 6, height = 3)
   } else if(isTRUE(save) & isTRUE(adolescent)) {
-    ggsave(paste0("figures/", var, "_adolescents.png"), width = 8, height = 4)
+    ggsave(paste0("figures/", var, "_adolescents.png"), width = 6, height = 3)
   }
   
   return(p)
 }
 ```
+
+Number of participants: 430870. Number of participants aged 15-24:
+53100.
 
 ## Internet Use
 
