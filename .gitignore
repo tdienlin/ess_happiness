@@ -2,6 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
-data/
-analyses/analyses_cache/
-analyses/analyses_files/
+data/*
+analyses_cache/*
